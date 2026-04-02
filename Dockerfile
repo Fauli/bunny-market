@@ -28,6 +28,9 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Create data directory for persistent SQLite DB
+RUN mkdir -p /data && chown nextjs:nodejs /data
+
 # Copy public assets
 COPY --from=builder /app/public ./public
 
@@ -35,19 +38,22 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma files (schema + migrations + database)
+# Copy Prisma files (schema + migrations for runtime migrate)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/dev.db ./dev.db
-
-# Copy prisma config for migrate
 COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+
+# Copy seed DB so first run has tables
+COPY --from=builder --chown=nextjs:nodejs /app/dev.db /data/bunny-market.db
 
 USER nextjs
 
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
-ENV DATABASE_URL="file:./dev.db"
+ENV DATABASE_URL="file:/data/bunny-market.db"
 ENV JWT_SECRET="bunny-market-secret-change-in-production"
 
 CMD ["node", "server.js"]
