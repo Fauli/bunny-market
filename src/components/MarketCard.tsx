@@ -83,7 +83,7 @@ export default function MarketCard({ market }: { market: Market }) {
         </div>
 
         <div className="flex justify-between items-center mt-4 text-xs text-gray-500">
-          <span>{total.toLocaleString()} 🥕 in pool</span>
+          <span>{total.toLocaleString()} 🐰 in pool</span>
           <span>{market._count.bets} trades</span>
           <span>by {market.creator.username}</span>
         </div>

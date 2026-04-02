@@ -41,7 +41,7 @@ export default function RegisterPage() {
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-8">
         <h1 className="text-2xl font-bold mb-6 text-center">Create Account</h1>
         <p className="text-gray-400 text-sm text-center mb-6">
-          Sign up and get 1,000 free bunnies to start betting!
+          Create an account, then set your bunny balance in your profile.
         </p>
 
         {error && (

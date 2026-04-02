@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/lib/UserContext";
@@ -18,17 +19,19 @@ export default function Navbar() {
     <nav className="border-b border-gray-800 bg-gray-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl">🐰</span>
-            <span className="text-xl font-bold text-white">Bunny Market</span>
+          <Link href="/" className="flex items-center">
+            <Image src="/bunny-market-logo.png" alt="Bunny Market" width={180} height={48} priority />
           </Link>
 
           <div className="flex items-center gap-4">
+            <Link href="/how-it-works" className="text-sm text-gray-400 hover:text-white transition">
+              How It Works
+            </Link>
             {user ? (
               <>
                 <span className="text-sm text-gray-400">
                   <span className="text-orange-400 font-semibold">{user.bunnies.toLocaleString()}</span>{" "}
-                  🥕 bunnies
+                  🐰 bunnies
                 </span>
                 <Link
                   href="/create"
@@ -36,7 +39,9 @@ export default function Navbar() {
                 >
                   Create Market
                 </Link>
-                <span className="text-sm text-gray-300">{user.username}</span>
+                <Link href="/profile" className="text-sm text-gray-300 hover:text-white transition">
+                  {user.username}
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="text-sm text-gray-400 hover:text-white transition"

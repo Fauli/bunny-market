@@ -11,7 +11,7 @@ model User {
   id        String   @id @default(cuid())
   username  String   @unique
   password  String
-  bunnies   Int      @default(1000)
+  bunnies   Int      @default(0)
   createdAt DateTime @default(now())
   markets   Market[]
   bets      Bet[]

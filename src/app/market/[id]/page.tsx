@@ -267,7 +267,7 @@ export default function MarketPage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-orange-400">{bet.amount.toLocaleString()} 🥕</span>
+                  <span className="text-sm font-semibold text-orange-400">{bet.amount.toLocaleString()} 🐰</span>
                   <span className="text-xs text-gray-500">
                     {new Date(bet.createdAt).toLocaleDateString()}
                   </span>

@@ -50,8 +50,8 @@ export default function Home() {
           <span className="text-blue-400">on Anything</span>
         </h1>
         <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-          Create prediction markets, place bets with bunnies, and win big when
-          you&apos;re right. Everyone starts with 1,000 bunnies.
+          Create prediction markets and place bets with your real bunnies.
+          Set your balance in your profile and start trading.
         </p>
         {!user && (
           <Link
