@@ -46,4 +46,5 @@ model Bet {
   marketId  String
   market    Market   @relation(fields: [marketId], references: [id])
   paidOut   Boolean  @default(false)
+  payout    Int      @default(0)
 }

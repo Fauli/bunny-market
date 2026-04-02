@@ -38,17 +38,20 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma files (schema + migrations for runtime migrate)
+# Copy Prisma files (schema + migrations + generated client)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
-# Copy seed DB so first run has tables
-COPY --from=builder --chown=nextjs:nodejs /app/dev.db /data/bunny-market.db
+# Copy seed DB for first run
+COPY --from=builder --chown=nextjs:nodejs /app/dev.db /app/seed.db
 
-USER nextjs
+# Copy migration tooling
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+
+# Entrypoint script: seed DB if missing, run migrations, start server
+COPY --chown=nextjs:nodejs entrypoint.sh ./entrypoint.sh
+RUN chmod +x entrypoint.sh
 
 EXPOSE 3000
 ENV PORT=3000
@@ -56,4 +59,4 @@ ENV HOSTNAME="0.0.0.0"
 ENV DATABASE_URL="file:/data/bunny-market.db"
 ENV JWT_SECRET="bunny-market-secret-change-in-production"
 
-CMD ["node", "server.js"]
+CMD ["./entrypoint.sh"]

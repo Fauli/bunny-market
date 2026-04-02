@@ -69,8 +69,9 @@ export default function ProfilePage() {
             <input
               type="number"
               min={0}
+              max={1000000}
               value={bunnies}
-              onChange={(e) => setBunnies(Math.max(0, parseInt(e.target.value) || 0))}
+              onChange={(e) => setBunnies(Math.min(1_000_000, Math.max(0, parseInt(e.target.value) || 0)))}
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition"
             />
           </div>

@@ -30,17 +30,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const winningBets = market.bets.filter((b) => b.option === winner);
 
   // Pay out winners proportionally
-  const updates = winningBets.map((bet) => {
-    const winningPool = winner === "A" ? market.totalA : market.totalB;
-    const payout = winningPool > 0 ? Math.floor((bet.amount / winningPool) * totalPool) : 0;
-    return prisma.user.update({
+  const winningPool = winner === "A" ? market.totalA : market.totalB;
+  const payouts = winningBets.map((bet) => ({
+    bet,
+    payout: winningPool > 0 ? Math.floor((bet.amount / winningPool) * totalPool) : 0,
+  }));
+
+  const userUpdates = payouts.map(({ bet, payout }) =>
+    prisma.user.update({
       where: { id: bet.userId },
       data: { bunnies: { increment: payout } },
-    });
-  });
+    })
+  );
 
-  const betUpdates = winningBets.map((bet) =>
-    prisma.bet.update({ where: { id: bet.id }, data: { paidOut: true } })
+  const betUpdates = payouts.map(({ bet, payout }) =>
+    prisma.bet.update({ where: { id: bet.id }, data: { paidOut: true, payout } })
   );
 
   await prisma.$transaction([
@@ -48,7 +52,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       where: { id: marketId },
       data: { resolved: true, winner },
     }),
-    ...updates,
+    ...userUpdates,
     ...betUpdates,
   ]);
 

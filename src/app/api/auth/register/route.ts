@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { signToken } from "@/lib/auth";
 
 export async function POST(req: Request) {
-  const { username, password } = await req.json();
+  const { username, password, bunnies } = await req.json();
 
   if (!username || !password) {
     return NextResponse.json({ error: "Username and password required" }, { status: 400 });
@@ -21,7 +21,11 @@ export async function POST(req: Request) {
 
   const hashed = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
-    data: { username, password: hashed },
+    data: {
+      username,
+      password: hashed,
+      bunnies: typeof bunnies === "number" && bunnies >= 0 && bunnies <= 1_000_000 ? Math.floor(bunnies) : 0,
+    },
   });
 
   const token = signToken(user.id);

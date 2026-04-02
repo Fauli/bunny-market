@@ -10,8 +10,8 @@ export async function PUT(req: Request) {
 
   const { bunnies } = await req.json();
 
-  if (typeof bunnies !== "number" || bunnies < 0 || !Number.isInteger(bunnies)) {
-    return NextResponse.json({ error: "Bunnies must be a non-negative integer" }, { status: 400 });
+  if (typeof bunnies !== "number" || bunnies < 0 || !Number.isInteger(bunnies) || bunnies > 1_000_000) {
+    return NextResponse.json({ error: "Bunnies must be an integer between 0 and 1,000,000" }, { status: 400 });
   }
 
   const user = await prisma.user.update({

@@ -12,5 +12,6 @@ export async function GET() {
     where: { id: userId },
     select: { id: true, username: true, bunnies: true },
   });
-  return NextResponse.json({ user });
+  const isAdmin = user?.username === "fauli";
+  return NextResponse.json({ user: user ? { ...user, isAdmin } : null });
 }

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
-type User = { id: string; username: string; bunnies: number } | null;
+type User = { id: string; username: string; bunnies: number; isAdmin?: boolean } | null;
 
 const UserContext = createContext<{
   user: User;

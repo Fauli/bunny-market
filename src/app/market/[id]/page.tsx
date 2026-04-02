@@ -8,6 +8,8 @@ type Bet = {
   id: string;
   amount: number;
   option: string;
+  payout: number;
+  paidOut: boolean;
   createdAt: string;
   user: { username: string };
 };
@@ -95,6 +97,20 @@ export default function MarketPage() {
       body: JSON.stringify({ winner }),
     });
     setLoading(false);
+    await Promise.all([fetchMarket(), refresh()]);
+  };
+
+  const handleDeleteMarket = async () => {
+    if (!confirm("Delete this entire market? All bets will be refunded.")) return;
+    setLoading(true);
+    await fetch(`/api/markets/${id}`, { method: "DELETE" });
+    setLoading(false);
+    router.push("/");
+  };
+
+  const handleDeleteBet = async (betId: string) => {
+    if (!confirm("Delete this bet? The user will be refunded.")) return;
+    await fetch(`/api/bets/${betId}`, { method: "DELETE" });
     await Promise.all([fetchMarket(), refresh()]);
   };
 
@@ -249,6 +265,111 @@ export default function MarketPage() {
         </div>
       )}
 
+      {/* Admin Controls */}
+      {user?.isAdmin && (
+        <div className="bg-red-950/30 border border-red-800 rounded-xl p-6 mb-8">
+          <h2 className="text-lg font-semibold mb-2 text-red-300">Admin</h2>
+          <button
+            onClick={handleDeleteMarket}
+            disabled={loading}
+            className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-medium px-6 py-2 rounded-lg transition"
+          >
+            Delete Market
+          </button>
+          <p className="text-xs text-gray-500 mt-2">All bets will be refunded if the market is not resolved.</p>
+        </div>
+      )}
+
+      {/* Settlement Summary */}
+      {market.resolved && market.winner && market.bets.length > 0 && (() => {
+        const winnerLabel = market.winner === "A" ? market.optionA : market.optionB;
+        const winningPool = market.winner === "A" ? market.totalA : market.totalB;
+        const losers = market.bets.filter((b) => b.option !== market.winner);
+        const winners = market.bets.filter((b) => b.option === market.winner);
+
+        // Aggregate by user
+        const loserTotals = new Map<string, number>();
+        losers.forEach((b) => {
+          loserTotals.set(b.user.username, (loserTotals.get(b.user.username) || 0) + b.amount);
+        });
+        const winnerTotals = new Map<string, { bet: number; payout: number }>();
+        winners.forEach((b) => {
+          const prev = winnerTotals.get(b.user.username) || { bet: 0, payout: 0 };
+          winnerTotals.set(b.user.username, { bet: prev.bet + b.amount, payout: prev.payout + b.payout });
+        });
+
+        // Calculate transfers: each loser distributes to each winner proportionally
+        const transfers: { from: string; to: string; amount: number }[] = [];
+        loserTotals.forEach((lostAmount, loserName) => {
+          winnerTotals.forEach(({ bet: winBet }, winnerName) => {
+            if (loserName === winnerName) return;
+            const transfer = winningPool > 0 ? Math.floor((winBet / winningPool) * lostAmount) : 0;
+            if (transfer > 0) {
+              transfers.push({ from: loserName, to: winnerName, amount: transfer });
+            }
+          });
+        });
+
+        return (
+          <div className="bg-green-950/30 border border-green-800 rounded-xl p-6 mb-8">
+            <h2 className="text-lg font-semibold mb-1 text-green-300">Settlement</h2>
+            <p className="text-sm text-gray-400 mb-4">
+              Outcome: <span className="text-white font-medium">{winnerLabel}</span> won
+            </p>
+
+            {/* Winners */}
+            {winnerTotals.size > 0 && (
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-gray-300 mb-2">Winners</h3>
+                <div className="space-y-1">
+                  {Array.from(winnerTotals).map(([name, { bet, payout }]) => (
+                    <div key={name} className="flex justify-between items-center bg-gray-900/50 rounded-lg px-3 py-2 text-sm">
+                      <span className="text-green-400 font-medium">{name}</span>
+                      <span className="text-gray-300">
+                        bet {bet.toLocaleString()} &rarr; gets <span className="text-green-400 font-semibold">{payout.toLocaleString()}</span> 🐰
+                        <span className="text-gray-500 ml-1">(+{(payout - bet).toLocaleString()} profit)</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Losers */}
+            {loserTotals.size > 0 && (
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-gray-300 mb-2">Losers</h3>
+                <div className="space-y-1">
+                  {Array.from(loserTotals).map(([name, amount]) => (
+                    <div key={name} className="flex justify-between items-center bg-gray-900/50 rounded-lg px-3 py-2 text-sm">
+                      <span className="text-red-400 font-medium">{name}</span>
+                      <span className="text-red-400">-{amount.toLocaleString()} 🐰</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Transfers */}
+            {transfers.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-300 mb-2">Bunny Transfers</h3>
+                <div className="space-y-1">
+                  {transfers.map((t, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-gray-900/50 rounded-lg px-3 py-2 text-sm">
+                      <span className="text-red-400 font-medium">{t.from}</span>
+                      <span className="text-gray-500">&rarr;</span>
+                      <span className="text-green-400 font-medium">{t.to}</span>
+                      <span className="ml-auto text-orange-400 font-semibold">{t.amount.toLocaleString()} 🐰</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Recent Bets */}
       <div>
         <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
@@ -271,6 +392,15 @@ export default function MarketPage() {
                   <span className="text-xs text-gray-500">
                     {new Date(bet.createdAt).toLocaleDateString()}
                   </span>
+                  {user?.isAdmin && !market.resolved && (
+                    <button
+                      onClick={() => handleDeleteBet(bet.id)}
+                      className="text-xs text-red-400 hover:text-red-300 transition"
+                      title="Delete bet and refund"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

@@ -24,6 +24,9 @@ export default function Navbar() {
           </Link>
 
           <div className="flex items-center gap-4">
+            <Link href="/leaderboard" className="text-sm text-gray-400 hover:text-white transition">
+              Market Specialists
+            </Link>
             <Link href="/how-it-works" className="text-sm text-gray-400 hover:text-white transition">
               How It Works
             </Link>

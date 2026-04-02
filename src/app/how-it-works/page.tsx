@@ -63,6 +63,29 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
+      {/* Managing Your Bunnies */}
+      <section className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-3">Managing Your Bunny Balance</h2>
+        <p className="text-gray-400 leading-relaxed mb-3">
+          Bunnies on this site represent real-life bunnies you own. Your balance
+          should reflect how many you actually have.
+        </p>
+        <ul className="text-gray-400 space-y-2">
+          <li className="flex gap-3">
+            <span className="text-blue-400 mt-0.5">&#x2022;</span>
+            <span>When you <strong className="text-white">sign up</strong>, enter your current bunny count. This sets your starting balance.</span>
+          </li>
+          <li className="flex gap-3">
+            <span className="text-blue-400 mt-0.5">&#x2022;</span>
+            <span>To <strong className="text-white">update your balance</strong>, go to your profile page (click your username in the top bar). Enter your new bunny count and hit save.</span>
+          </li>
+          <li className="flex gap-3">
+            <span className="text-blue-400 mt-0.5">&#x2022;</span>
+            <span>Keep your balance honest &mdash; it should match the real bunnies you have available for betting.</span>
+          </li>
+        </ul>
+      </section>
+
       {/* Key Rules */}
       <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
         <h2 className="text-xl font-semibold mb-3">Key Rules</h2>

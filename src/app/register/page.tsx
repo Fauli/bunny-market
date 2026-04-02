@@ -8,6 +8,7 @@ import { useUser } from "@/lib/UserContext";
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [bunnies, setBunnies] = useState(0);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -21,7 +22,7 @@ export default function RegisterPage() {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, bunnies }),
     });
 
     const data = await res.json();
@@ -72,6 +73,18 @@ export default function RegisterPage() {
               placeholder="At least 6 characters"
               required
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Current Bunny Count</label>
+            <input
+              type="number"
+              min={0}
+              value={bunnies}
+              onChange={(e) => setBunnies(Math.max(0, parseInt(e.target.value) || 0))}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition"
+              placeholder="How many real bunnies do you have?"
+            />
+            <p className="text-xs text-gray-500 mt-1">You can update this later in your profile.</p>
           </div>
           <button
             type="submit"
