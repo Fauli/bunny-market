@@ -20,7 +20,19 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Market not found" }, { status: 404 });
   }
 
-  return NextResponse.json(market);
+  // Aggregate reaction counts and current user's reactions
+  const reactions = await prisma.reaction.findMany({ where: { marketId: id } });
+  const reactionCounts: Record<string, number> = {};
+  reactions.forEach((r) => {
+    reactionCounts[r.emoji] = (reactionCounts[r.emoji] || 0) + 1;
+  });
+
+  const userId = await getCurrentUserId();
+  const userReactions = userId
+    ? reactions.filter((r) => r.userId === userId).map((r) => r.emoji)
+    : [];
+
+  return NextResponse.json({ ...market, reactionCounts, userReactions });
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -55,6 +67,9 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     : [];
 
   await prisma.$transaction([
+    prisma.reaction.deleteMany({ where: { marketId: id } }),
+    prisma.comment.deleteMany({ where: { marketId: id } }),
+    prisma.oddsSnapshot.deleteMany({ where: { marketId: id } }),
     prisma.bet.deleteMany({ where: { marketId: id } }),
     prisma.market.delete({ where: { id } }),
     ...refunds,

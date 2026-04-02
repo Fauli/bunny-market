@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type Market = {
   id: string;
@@ -19,6 +20,7 @@ type Market = {
 };
 
 export default function MarketCard({ market }: { market: Market }) {
+  const router = useRouter();
   const total = market.totalA + market.totalB;
   const pctA = total > 0 ? Math.round((market.totalA / total) * 100) : 50;
   const pctB = 100 - pctA;
@@ -86,7 +88,10 @@ export default function MarketCard({ market }: { market: Market }) {
         <div className="flex justify-between items-center mt-4 text-xs text-gray-500 gap-2">
           <span className="whitespace-nowrap">{total.toLocaleString()} 🐰 in pool</span>
           <span className="bg-gray-800 px-2 py-0.5 rounded-full whitespace-nowrap">{market.category}</span>
-          <span className="truncate min-w-0 text-right">by {market.creator.username}</span>
+          <span
+            className="truncate min-w-0 text-right hover:text-blue-400 transition cursor-pointer"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/user/${market.creator.username}`); }}
+          >by {market.creator.username}</span>
         </div>
       </div>
     </Link>

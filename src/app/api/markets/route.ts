@@ -8,8 +8,16 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const category = url.searchParams.get("category");
   const sort = url.searchParams.get("sort");
+  const search = url.searchParams.get("search");
 
-  const where = category && category !== "All" ? { category } : {};
+  const where: Record<string, unknown> = {};
+  if (category && category !== "All") where.category = category;
+  if (search) {
+    where.OR = [
+      { title: { contains: search } },
+      { description: { contains: search } },
+    ];
+  }
 
   const markets = await prisma.market.findMany({
     where,

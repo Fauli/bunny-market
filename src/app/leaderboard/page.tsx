@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 type Player = {
   id: string;
@@ -55,7 +56,7 @@ export default function LeaderboardPage() {
                   {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
                 </span>
                 <div>
-                  <span className="text-white font-medium">{player.username}</span>
+                  <Link href={`/user/${player.username}`} className="text-white font-medium hover:text-blue-400 transition">{player.username}</Link>
                   <div className="text-xs text-gray-500">
                     {player._count.bets} bets &middot; {player._count.markets} markets created
                   </div>

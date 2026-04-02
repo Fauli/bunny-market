@@ -2,8 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useUser } from "@/lib/UserContext";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
+
+const EMOJI_MAP: Record<string, string> = {
+  fire: "\u{1F525}",
+  bear: "\u{1F43B}",
+  rocket: "\u{1F680}",
+  skull: "\u{1F480}",
+  clown: "\u{1F921}",
+  heart: "\u2764\uFE0F",
+};
 
 type Bet = {
   id: string;
@@ -44,6 +54,8 @@ type Market = {
   creatorId: string;
   creator: { username: string };
   bets: Bet[];
+  reactionCounts: Record<string, number>;
+  userReactions: string[];
 };
 
 export default function MarketPage() {
@@ -156,6 +168,27 @@ export default function MarketPage() {
     }
   };
 
+  const handleReaction = async (emoji: string) => {
+    if (!user || !market) return;
+    // Optimistic update
+    const had = market.userReactions.includes(emoji);
+    setMarket({
+      ...market,
+      reactionCounts: {
+        ...market.reactionCounts,
+        [emoji]: (market.reactionCounts[emoji] || 0) + (had ? -1 : 1),
+      },
+      userReactions: had
+        ? market.userReactions.filter((e) => e !== emoji)
+        : [...market.userReactions, emoji],
+    });
+    await fetch(`/api/markets/${id}/reactions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emoji }),
+    });
+  };
+
   const oddsChartData = oddsHistory.map((p) => {
     const t = p.totalA + p.totalB;
     return {
@@ -185,14 +218,37 @@ export default function MarketPage() {
 
       {market.description && <p className="text-gray-400 mb-6">{market.description}</p>}
 
-      <div className="text-sm text-gray-500 mb-8">
-        Created by <span className="text-gray-300">{market.creator.username}</span> &middot; Ends{" "}
+      <div className="text-sm text-gray-500 mb-4">
+        Created by <Link href={`/user/${market.creator.username}`} className="text-gray-300 hover:text-blue-400 transition">{market.creator.username}</Link> &middot; Ends{" "}
         {new Date(market.endDate).toLocaleDateString("en-US", {
           year: "numeric",
           month: "long",
           day: "numeric",
           hour: "2-digit",
           minute: "2-digit",
+        })}
+      </div>
+
+      {/* Reactions */}
+      <div className="flex flex-wrap gap-2 mb-8">
+        {Object.entries(EMOJI_MAP).map(([key, emoji]) => {
+          const count = market.reactionCounts?.[key] || 0;
+          const active = market.userReactions?.includes(key);
+          return (
+            <button
+              key={key}
+              onClick={() => handleReaction(key)}
+              disabled={!user}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition border ${
+                active
+                  ? "bg-blue-900/40 border-blue-500 text-white"
+                  : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500"
+              } ${!user ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+            >
+              <span>{emoji}</span>
+              {count > 0 && <span className="text-xs font-medium">{count}</span>}
+            </button>
+          );
         })}
       </div>
 
@@ -375,7 +431,7 @@ export default function MarketPage() {
                 <div className="space-y-1">
                   {Array.from(winnerTotals).map(([name, { bet, payout }]) => (
                     <div key={name} className="flex justify-between items-center bg-gray-900/50 rounded-lg px-3 py-2 text-sm">
-                      <span className="text-green-400 font-medium">{name}</span>
+                      <Link href={`/user/${name}`} className="text-green-400 font-medium hover:underline">{name}</Link>
                       <span className="text-gray-300">
                         bet {bet.toLocaleString()} &rarr; gets <span className="text-green-400 font-semibold">{payout.toLocaleString()}</span> 🐰
                         <span className="text-gray-500 ml-1">(+{(payout - bet).toLocaleString()} profit)</span>
@@ -393,7 +449,7 @@ export default function MarketPage() {
                 <div className="space-y-1">
                   {Array.from(loserTotals).map(([name, amount]) => (
                     <div key={name} className="flex justify-between items-center bg-gray-900/50 rounded-lg px-3 py-2 text-sm">
-                      <span className="text-red-400 font-medium">{name}</span>
+                      <Link href={`/user/${name}`} className="text-red-400 font-medium hover:underline">{name}</Link>
                       <span className="text-red-400">-{amount.toLocaleString()} 🐰</span>
                     </div>
                   ))}
@@ -408,9 +464,9 @@ export default function MarketPage() {
                 <div className="space-y-1">
                   {transfers.map((t, i) => (
                     <div key={i} className="flex items-center gap-2 bg-gray-900/50 rounded-lg px-3 py-2 text-sm">
-                      <span className="text-red-400 font-medium">{t.from}</span>
+                      <Link href={`/user/${t.from}`} className="text-red-400 font-medium hover:underline">{t.from}</Link>
                       <span className="text-gray-500">&rarr;</span>
-                      <span className="text-green-400 font-medium">{t.to}</span>
+                      <Link href={`/user/${t.to}`} className="text-green-400 font-medium hover:underline">{t.to}</Link>
                       <span className="ml-auto text-orange-400 font-semibold">{t.amount.toLocaleString()} 🐰</span>
                     </div>
                   ))}
@@ -431,7 +487,7 @@ export default function MarketPage() {
             {market.bets.map((bet) => (
               <div key={bet.id} className="flex justify-between items-center bg-gray-900 border border-gray-800 rounded-lg px-4 py-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-300 font-medium">{bet.user.username}</span>
+                  <Link href={`/user/${bet.user.username}`} onClick={(e) => e.stopPropagation()} className="text-sm text-gray-300 font-medium hover:text-blue-400 transition">{bet.user.username}</Link>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${
                     bet.option === "A" ? "bg-blue-900 text-blue-300" : "bg-pink-900 text-pink-300"
                   }`}>
@@ -526,7 +582,7 @@ export default function MarketPage() {
             {comments.map((c) => (
               <div key={c.id} className="bg-gray-900 border border-gray-800 rounded-lg px-4 py-3">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm font-medium text-gray-300">{c.user.username}</span>
+                  <Link href={`/user/${c.user.username}`} className="text-sm font-medium text-gray-300 hover:text-blue-400 transition">{c.user.username}</Link>
                   <span className="text-xs text-gray-500">
                     {new Date(c.createdAt).toLocaleDateString("en-US", {
                       month: "short",

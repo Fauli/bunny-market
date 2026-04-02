@@ -16,6 +16,7 @@ model User {
   markets   Market[]
   bets      Bet[]
   comments  Comment[]
+  reactions Reaction[]
 }
 
 model Market {
@@ -38,6 +39,7 @@ model Market {
   totalB        Int            @default(0)
   comments      Comment[]
   oddsSnapshots OddsSnapshot[]
+  reactions     Reaction[]
 }
 
 model Bet {
@@ -61,6 +63,18 @@ model Comment {
   user      User     @relation(fields: [userId], references: [id])
   marketId  String
   market    Market   @relation(fields: [marketId], references: [id])
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  emoji     String
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  marketId  String
+  market    Market   @relation(fields: [marketId], references: [id])
+
+  @@unique([userId, marketId, emoji])
 }
 
 model OddsSnapshot {
