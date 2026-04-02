@@ -13,6 +13,7 @@ export default function CreateMarketPage() {
   const [form, setForm] = useState({
     title: "",
     description: "",
+    category: "General",
     optionA: "",
     optionB: "",
     detailA: "",
@@ -84,6 +85,19 @@ export default function CreateMarketPage() {
             rows={3}
             placeholder="Add context about this prediction..."
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Category</label>
+          <select
+            value={form.category}
+            onChange={(e) => update("category", e.target.value)}
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition"
+          >
+            {["General", "Sports", "Politics", "Entertainment", "Science", "Office Bets", "Other"].map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

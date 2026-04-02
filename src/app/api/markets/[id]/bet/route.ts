@@ -27,6 +27,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Not enough bunnies" }, { status: 400 });
   }
 
+  const newTotalA = option === "A" ? market.totalA + amount : market.totalA;
+  const newTotalB = option === "B" ? market.totalB + amount : market.totalB;
+
   await prisma.$transaction([
     prisma.bet.create({
       data: { amount, option, userId, marketId },
@@ -38,6 +41,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     prisma.market.update({
       where: { id: marketId },
       data: option === "A" ? { totalA: { increment: amount } } : { totalB: { increment: amount } },
+    }),
+    prisma.oddsSnapshot.create({
+      data: { marketId, totalA: newTotalA, totalB: newTotalB },
     }),
   ]);
 

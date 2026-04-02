@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useUser } from "@/lib/UserContext";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 type Bet = {
   id: string;
@@ -12,6 +13,19 @@ type Bet = {
   paidOut: boolean;
   createdAt: string;
   user: { username: string };
+};
+
+type Comment = {
+  id: string;
+  text: string;
+  createdAt: string;
+  user: { username: string };
+};
+
+type OddsPoint = {
+  totalA: number;
+  totalB: number;
+  createdAt: string;
 };
 
 type Market = {
@@ -41,6 +55,9 @@ export default function MarketPage() {
   const [selectedOption, setSelectedOption] = useState<"A" | "B">("A");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentText, setCommentText] = useState("");
+  const [oddsHistory, setOddsHistory] = useState<OddsPoint[]>([]);
 
   const fetchMarket = async () => {
     const res = await fetch(`/api/markets/${id}`);
@@ -49,8 +66,20 @@ export default function MarketPage() {
     }
   };
 
+  const fetchComments = async () => {
+    const res = await fetch(`/api/markets/${id}/comments`);
+    if (res.ok) setComments(await res.json());
+  };
+
+  const fetchOdds = async () => {
+    const res = await fetch(`/api/markets/${id}/odds`);
+    if (res.ok) setOddsHistory(await res.json());
+  };
+
   useEffect(() => {
     fetchMarket();
+    fetchComments();
+    fetchOdds();
   }, [id]);
 
   if (!market) {
@@ -85,7 +114,7 @@ export default function MarketPage() {
       setError(data.error);
       return;
     }
-    await Promise.all([fetchMarket(), refresh()]);
+    await Promise.all([fetchMarket(), fetchOdds(), refresh()]);
   };
 
   const handleResolve = async (winner: "A" | "B") => {
@@ -113,6 +142,28 @@ export default function MarketPage() {
     await fetch(`/api/bets/${betId}`, { method: "DELETE" });
     await Promise.all([fetchMarket(), refresh()]);
   };
+
+  const handleComment = async () => {
+    if (!commentText.trim()) return;
+    const res = await fetch(`/api/markets/${id}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: commentText }),
+    });
+    if (res.ok) {
+      setCommentText("");
+      fetchComments();
+    }
+  };
+
+  const oddsChartData = oddsHistory.map((p) => {
+    const t = p.totalA + p.totalB;
+    return {
+      time: new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
+      [`${market?.optionA || "A"} %`]: t > 0 ? Math.round((p.totalA / t) * 100) : 50,
+      [`${market?.optionB || "B"} %`]: t > 0 ? Math.round((p.totalB / t) * 100) : 50,
+    };
+  });
 
   return (
     <div className="max-w-4xl mx-auto mt-10 px-4 pb-20">
@@ -408,6 +459,23 @@ export default function MarketPage() {
         )}
       </div>
 
+      {/* Odds History Chart */}
+      {oddsChartData.length > 1 && (
+        <div className="mt-8 bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <h2 className="text-lg font-semibold mb-4">Odds History</h2>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={oddsChartData}>
+              <XAxis dataKey="time" tick={{ fill: "#6b7280", fontSize: 11 }} />
+              <YAxis domain={[0, 100]} tick={{ fill: "#6b7280", fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+              <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: "8px" }} />
+              <Legend />
+              <Line type="monotone" dataKey={`${market.optionA} %`} stroke="#3b82f6" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey={`${market.optionB} %`} stroke="#ec4899" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
       {/* Pool Info */}
       <div className="mt-8 bg-gray-900 border border-gray-800 rounded-xl p-6">
         <h2 className="text-lg font-semibold mb-3">Pool Summary</h2>
@@ -425,6 +493,54 @@ export default function MarketPage() {
             <p className="text-xs text-gray-500">{market.optionB}</p>
           </div>
         </div>
+      </div>
+
+      {/* Comments */}
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold mb-4">Comments ({comments.length})</h2>
+
+        {user && (
+          <div className="flex gap-3 mb-4">
+            <input
+              type="text"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder="Add a comment..."
+              maxLength={1000}
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition"
+              onKeyDown={(e) => e.key === "Enter" && handleComment()}
+            />
+            <button
+              onClick={handleComment}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2.5 rounded-lg transition"
+            >
+              Post
+            </button>
+          </div>
+        )}
+
+        {comments.length === 0 ? (
+          <p className="text-gray-500">No comments yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {comments.map((c) => (
+              <div key={c.id} className="bg-gray-900 border border-gray-800 rounded-lg px-4 py-3">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm font-medium text-gray-300">{c.user.username}</span>
+                  <span className="text-xs text-gray-500">
+                    {new Date(c.createdAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+                <p className="text-gray-400 text-sm">{c.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

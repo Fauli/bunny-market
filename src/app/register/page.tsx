@@ -58,8 +58,9 @@ export default function RegisterPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              maxLength={24}
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition"
-              placeholder="Choose a username"
+              placeholder="Choose a username (max 24 chars)"
               required
             />
           </div>

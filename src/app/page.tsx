@@ -5,10 +5,13 @@ import MarketCard from "@/components/MarketCard";
 import Link from "next/link";
 import { useUser } from "@/lib/UserContext";
 
+const CATEGORIES = ["All", "General", "Sports", "Politics", "Entertainment", "Science", "Office Bets", "Other"];
+
 type Market = {
   id: string;
   title: string;
   description: string;
+  category: string;
   optionA: string;
   optionB: string;
   totalA: number;
@@ -24,16 +27,27 @@ export default function Home() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "active" | "resolved">("all");
+  const [category, setCategory] = useState("All");
+  const [sort, setSort] = useState<"recent" | "trending">("recent");
   const { user } = useUser();
 
   useEffect(() => {
-    fetch("/api/markets")
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (category !== "All") params.set("category", category);
+    if (sort === "trending") params.set("sort", "trending");
+    fetch(`/api/markets?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        setMarkets(data);
+        setMarkets(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        setMarkets([]);
+      })
+      .finally(() => {
         setLoading(false);
       });
-  }, []);
+  }, [category, sort]);
 
   const filtered = markets.filter((m) => {
     if (filter === "active") return !m.resolved;
@@ -63,8 +77,8 @@ export default function Home() {
         )}
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 mb-6">
+      {/* Status Filters + Sort */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
         {(["all", "active", "resolved"] as const).map((f) => (
           <button
             key={f}
@@ -76,6 +90,34 @@ export default function Home() {
             }`}
           >
             {f.charAt(0).toUpperCase() + f.slice(1)}
+          </button>
+        ))}
+        <div className="w-px h-6 bg-gray-700 mx-1" />
+        <button
+          onClick={() => setSort(sort === "recent" ? "trending" : "recent")}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+            sort === "trending"
+              ? "bg-orange-600 text-white"
+              : "bg-gray-800 text-gray-400 hover:text-white"
+          }`}
+        >
+          {sort === "trending" ? "Trending" : "Recent"}
+        </button>
+      </div>
+
+      {/* Category Filters */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {CATEGORIES.map((c) => (
+          <button
+            key={c}
+            onClick={() => setCategory(c)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
+              category === c
+                ? "bg-gray-200 text-gray-900"
+                : "bg-gray-800 text-gray-400 hover:text-white"
+            }`}
+          >
+            {c}
           </button>
         ))}
       </div>

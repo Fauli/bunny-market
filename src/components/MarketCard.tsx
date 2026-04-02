@@ -6,6 +6,7 @@ type Market = {
   id: string;
   title: string;
   description: string;
+  category: string;
   optionA: string;
   optionB: string;
   totalA: number;
@@ -82,10 +83,10 @@ export default function MarketCard({ market }: { market: Market }) {
           </div>
         </div>
 
-        <div className="flex justify-between items-center mt-4 text-xs text-gray-500">
-          <span>{total.toLocaleString()} 🐰 in pool</span>
-          <span>{market._count.bets} trades</span>
-          <span>by {market.creator.username}</span>
+        <div className="flex justify-between items-center mt-4 text-xs text-gray-500 gap-2">
+          <span className="whitespace-nowrap">{total.toLocaleString()} 🐰 in pool</span>
+          <span className="bg-gray-800 px-2 py-0.5 rounded-full whitespace-nowrap">{market.category}</span>
+          <span className="truncate min-w-0 text-right">by {market.creator.username}</span>
         </div>
       </div>
     </Link>
